@@ -1,0 +1,41 @@
+# Ignore thumbnails created by windows
+[Tt]humbs.db
+
+# Ignore folders created by Visual Studio
+[Oo]bj/
+[Dd]ebug*/
+[Rr]elease*/
+_ReSharper*/
+_UpgradeReport_Files/
+TestResults/
+
+# Ignore files built by Visual Studio
+[Tt]est[Rr]esult*
+*.suo
+*.pdb
+*.user
+*.cache
+*.orig
+*.g.*
+*.resources
+*.lref
+*.log
+*.tlog
+*.FileListAbsolute.txt
+*.baml
+*.vshost.exe*
+*.obj
+*.exe
+*.msi
+*.aps
+*.pch
+*.vspscc
+*_i.c
+*_p.c
+*.ncb
+*.tlb
+*.tlh
+*.bak
+*.ilk
+*.lib
+*.sbr
