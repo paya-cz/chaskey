@@ -7,3 +7,13 @@ People using [Go](https://golang.org/) might be interested in [Chaskey in Go](ht
 
 # Optimizations #
 If you want maximum performance on modern Intel x86/x64 CPUs, you should manually inline the permutation function and unroll the permutation loop (compiler neither JIT won't do the job, even if you use MethodImplOptions.AggressiveInlining). This gives 2-4 speedup. SipHash still outperforms Chaskey in both 32-bit and 64-bit mode though, even after these optimizations (at least on i7 3630QM).
+
+These are the speeds I benchmarked:
+
+64-bit mode (hashing 10 GiB):
+- SipHash: 1 187 MiB/s
+- Chaskey: 603 MiB/s
+
+32-bit mode (again 10 GiB):
+- SipHash: 329 MiB/s
+- Chaskey: 293 MiB/s
