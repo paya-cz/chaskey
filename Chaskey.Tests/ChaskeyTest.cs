@@ -25,7 +25,7 @@ namespace Chaskey.Tests
                 message[i] = (byte)i;
 
                 // Compute the tag
-                var tag = prf.Compute(new ArraySegment<byte>(message, 0, i));
+                var tag = prf.Compute(message, 0, i);
                 // Get the target tag
                 var targetTag = vectors[i].SelectMany(v => BitConverter.GetBytes(v));
 

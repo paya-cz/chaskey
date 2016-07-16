@@ -32,207 +32,365 @@ namespace Chaskey
 
         /// <summary>Initializes a new instance of Chaskey PRF using specified key and performs key scheduling.</summary>
         /// <param name="key"><para>Byte array holding the key.</para><para>Must not be null.</para></param>
-        /// <param name="offset">Offset in <paramref name="key"/> where the actual key starts.</param>
-        /// <param name="length">Length of the key. Must be 128-bits (16 bytes).</param>
-        /// <exception cref="System.ArgumentNulLException">Thrown when <paramref name="key"/> is null.</exception>
-        /// <exception cref="System.ArgumentOutOfRangeException">Thrown when <paramref name="offset"/> or <paramref name="length"/> are out of range.</exception>
-        /// <exception cref="System.ArgumentException">Thrown when the key is not 128-bit.</exception>
-        public Chaskey(byte[] key, int offset, int length)
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="key"/> is null.</exception>
+        /// <exception cref="ArgumentException">Thrown when the key is not 128-bit.</exception>
+        public Chaskey(byte[] key)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset");
-            if (length != 128 / 8)
-                throw new ArgumentException("The specified key is not of valid size for this algorithm.");
-            if (length > key.Length - offset)
-                throw new ArgumentOutOfRangeException("length", "Attempt to initialize beyond end of buffer.");
+                throw new ArgumentNullException(nameof(key));
+            if (key.Length != 128 / 8)
+                throw new ArgumentException("The key must be 128 bits long (16 bytes).", nameof(key));
 
-            // Copy key
-            Buffer.BlockCopy(key, offset, this.key, 0, length);
-            // Key schedule
-            Subkeys(this.key, this.keyAligned, this.keyUnaligned);
+            this.Initialize(key, 0, key.Length);
+        }
+
+        /// <summary>Initializes a new instance of Chaskey PRF using specified key and performs key scheduling.</summary>
+        /// <param name="key"><para>Byte array holding the key.</para><para>Must not be null.</para></param>
+        /// <param name="offset">Offset in <paramref name="key"/> where the actual key starts.</param>
+        /// <param name="count">Length of the key. Must be 128-bits (16 bytes).</param>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="key"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="offset"/> is negative.</exception>
+        /// <exception cref="ArgumentException">Thrown when the key is not 128-bit.</exception>
+        public Chaskey(byte[] key, int offset, int count)
+        {
+            if (key == null)
+                throw new ArgumentNullException(nameof(key));
+            if (offset < 0)
+                throw new ArgumentOutOfRangeException(nameof(offset), "Array offset cannot be negative.");
+            if (count != 128 / 8)
+                throw new ArgumentException("The key must be 128 bits long (16 bytes).", nameof(count));
+            if (count > key.Length - offset)
+                throw new ArgumentException("The specified '" + nameof(offset) + "' and '" + nameof(count) + "' parameters do not specify a valid range in '" + nameof(key) + "'.");
+
+            this.Initialize(key, offset, count);
         }
 
         #endregion
 
-        #region Key scheduling - (TimesTwo, Subkeys)
+        #region Key scheduling - (Initialize, TimesTwo)
 
-        private static readonly uint[] C = new[] { 0x00u, 0x87u };
-
-        private static void Subkeys(uint[] key, uint[] keyAligned, uint[] keyUnaligned)
+        private void Initialize(byte[] key, int offset, int count)
         {
-            TimesTwo(keyAligned, key);
-            TimesTwo(keyUnaligned, keyAligned);
+            // Copy key
+            Buffer.BlockCopy(key, offset, this.key, 0, count);
+            // Key schedule
+            TimesTwo(this.keyAligned, this.key);
+            TimesTwo(this.keyUnaligned, this.keyAligned);
         }
 
         private static void TimesTwo(uint[] @out, uint[] @in)
         {
-            @out[0] = (@in[0] << 1) ^ C[@in[3] >> 31];
-            @out[1] = (@in[1] << 1) | (@in[0] >> 31);
-            @out[2] = (@in[2] << 1) | (@in[1] >> 31);
-            @out[3] = (@in[3] << 1) | (@in[2] >> 31);
+            @out[0] = @in[0] << 1 ^ (0x87u & (uint)((int)@in[3] >> 31));
+            @out[1] = @in[1] << 1 | @in[0] >> 31;
+            @out[2] = @in[2] << 1 | @in[1] >> 31;
+            @out[3] = @in[3] << 1 | @in[2] >> 31;
         }
 
         #endregion
 
         #region PRF computation (Compute)
 
-        /// <summary>Computes Chaskey tag for the specified message.</summary>
-        /// <param name="message">Message which is used to compute the Chaskey tag.</param>
-        /// <returns>Returns 128-bit (16 bytes) tag.</returns>
-        /// <remarks>Does not throw exceptions.</remarks>
-        public unsafe byte[] Compute(ArraySegment<byte> message)
+        /// <summary>Computes Chaskey 128-bit tag for the specified message.</summary>
+        /// <param name="data"><para>The byte array for which to compute Chaskey tag.</para><para>Must not be null.</para></param>
+        /// <returns>Returns 128-bit (16 bytes) Chaskey tag.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="data"/> is null.</exception>
+        public byte[] Compute(byte[] data)
         {
-            fixed (byte* pMessageStart = message.Array)
+            if (data == null)
+                throw new ArgumentNullException(nameof(data));
+
+            var tag = new byte[16];
+            this.Compute(data, 0, data.Length, tag, 0);
+            return tag;
+        }
+        
+        /// <summary>Computes Chaskey 128-bit tag for the specified message.</summary>
+        /// <param name="data">The byte array for which to compute Chaskey tag.</param>
+        /// <returns>Returns 128-bit (16 bytes) Chaskey tag.</returns>
+        /// <remarks>Does not throw exceptions.</remarks>
+        public byte[] Compute(ArraySegment<byte> data)
+        {
+            var tag = new byte[16];
+            this.Compute(data.Array, data.Offset, data.Count, tag, 0);
+            return tag;
+        }
+
+        /// <summary>Computes Chaskey 128-bit tag for the specified message.</summary>
+        /// <param name="data"><para>The byte array for which to compute Chaskey tag.</para><para>Must not be null.</para></param>
+        /// <param name="offset">The zero-based index of the first element in the range.</param>
+        /// <param name="count">The number of elements in the range.</param>
+        /// <returns>Returns 128-bit (16 bytes) Chaskey tag.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="data"/> is null.</exception>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="offset"/> and <paramref name="count"/> do not specify a valid range in <paramref name="data"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="offset"/> or <paramref name="count"/> is negative.</exception>
+        public byte[] Compute(byte[] data, int offset, int count)
+        {
+            if (data == null)
+                throw new ArgumentNullException(nameof(data));
+            if (offset < 0)
+                throw new ArgumentOutOfRangeException(nameof(offset), "Array offset cannot be negative.");
+            if (count < 0)
+                throw new ArgumentOutOfRangeException(nameof(count), "Number of array elements cannot be negative.");
+            if (data.Length - offset < count)
+                throw new ArgumentException("The specified '" + nameof(offset) + "' and '" + nameof(count) + "' parameters do not specify a valid range in '" + nameof(data) + "'.");
+
+            var tag = new byte[16];
+            this.Compute(data, offset, count, tag, 0);
+            return tag;
+        }
+
+        /// <summary><para>Computes Chaskey 128-bit tag for the specified message.</para><para>Use this method for fastest allocation-free implementation.</para></summary>
+        /// <param name="data"><para>The byte array for which to compute Chaskey tag.</para><para>Must not be null.</para></param>
+        /// <param name="dataOffset">The zero-based index of the first element in the data range.</param>
+        /// <param name="dataCount">The number of elements in the range.</param>
+        /// <param name="tag"><para>The byte array that receives the computed Chaskey tag.</para><para>Must not be null.</para></param>
+        /// <param name="tagOffset">The zero-based index of the range in <paramref name="tag"/> where to store the computed tag.</param>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="data"/> or <paramref name="tag"/> is null.</exception>
+        /// <exception cref="ArgumentException">
+        ///     <para>Thrown when <paramref name="dataOffset"/> and <paramref name="dataCount"/> do not specify a valid range in <paramref name="data"/>.</para>
+        ///     <para>Thrown when <paramref name="tagOffset"/> does not specify a valid 16-byte range in <paramref name="tag"/>.</para>
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="dataOffset"/>, <paramref name="dataCount"/> or <paramref name="tagOffset"/> is negative.</exception>
+        public void Compute(byte[] data, int dataOffset, int dataCount, byte[] tag, int tagOffset)
+        {
+            if (data == null)
+                throw new ArgumentNullException(nameof(data));
+            if (dataOffset < 0)
+                throw new ArgumentOutOfRangeException(nameof(dataOffset), "Array offset cannot be negative.");
+            if (dataCount < 0)
+                throw new ArgumentOutOfRangeException(nameof(dataCount), "Number of array elements cannot be negative.");
+            if (data.Length - dataOffset < dataCount)
+                throw new ArgumentException("The specified '" + nameof(dataOffset) + "' and '" + nameof(dataCount) + "' parameters do not specify a valid range in '" + nameof(data) + "'.");
+            if (tag == null)
+                throw new ArgumentNullException(nameof(tag));
+            if (tagOffset < 0)
+                throw new ArgumentOutOfRangeException(nameof(tagOffset), "Array offset cannot be negative.");
+            if (tag.Length - tagOffset < 16)
+                throw new ArgumentException("The specified '" + nameof(tagOffset) + "' parameter does not specify a valid 16-byte range in '" + nameof(tag) + "'.");
+
+            // 128-bit internal state
+            var v0 = this.key[0];
+            var v1 = this.key[1];
+            var v2 = this.key[2];
+            var v3 = this.key[3];
+
+            // Key used for last round
+            uint[] finalizationKey;
+
+            unsafe
             {
-                var pMessage = (uint*)pMessageStart;
-                // Pointer to the 2nd to last message block (aligned to 16 bytes)
-                var pMessageEndAligned = pMessage + (((message.Count - 1) >> 4) << 2);
-
-                // 128-bit internal state
-                var state0 = this.key[0];
-                var state1 = this.key[1];
-                var state2 = this.key[2];
-                var state3 = this.key[3];
-
-                // Process 128 bits of the message at a time
-                if (message.Count > 0)
+                fixed (byte* dataStart = data)
                 {
-                    for (; pMessage != pMessageEndAligned; pMessage += 4)
+                    // Initialize pointer to current data block to the start of the range
+                    var dataPointer = (uint*)(dataStart + dataOffset);
+
+                    // Process 128 bits of the message at a time
+                    if (dataCount > 16)
                     {
-                        // Mix message bits into the state
-                        state0 ^= pMessage[0];
-                        state1 ^= pMessage[1];
-                        state2 ^= pMessage[2];
-                        state3 ^= pMessage[3];
+                        // Pointer to the 2nd to last message block (aligned to 16 bytes)
+                        var dataEndAligned = dataPointer + (dataCount - 1 >> 4 << 2);
 
-                        // Mix the internal state
-                        Permute(ref state0, ref state1, ref state2, ref state3);
-                    }
-                }
-
-                // Process last block (0 to 16 bytes)
-                {
-                    uint[] lastBlockKey;
-
-                    if (message.Count > 0 && (message.Count & 0xF) == 0)
-                    {
-                        lastBlockKey = this.keyAligned;
-
-                        // Mix last 16 bytes into the state
-                        state0 ^= pMessage[0];
-                        state1 ^= pMessage[1];
-                        state2 ^= pMessage[2];
-                        state3 ^= pMessage[3];
-                    }
-                    else
-                    {
-                        lastBlockKey = this.keyUnaligned;
-
-                        // Mix last few bytes (less than 16) into the state
-                        var lastBlock = new byte[16];
-                        var i = 0;
-                        for (var p = (byte*)pMessage; p != pMessageStart + message.Count; p++, i++)
-                            lastBlock[i] = *p;
-                        lastBlock[i++] = 0x01; // padding bit
-
-                        fixed (byte* pLastBlock = lastBlock)
+                        for (; dataPointer != dataEndAligned; dataPointer += 4)
                         {
-                            var pLastBlock32 = (uint*)pLastBlock;
-                            state0 ^= pLastBlock32[0];
-                            state1 ^= pLastBlock32[1];
-                            state2 ^= pLastBlock32[2];
-                            state3 ^= pLastBlock32[3];
+                            // Mix message bits into the state
+                            v0 ^= dataPointer[0];
+                            v1 ^= dataPointer[1];
+                            v2 ^= dataPointer[2];
+                            v3 ^= dataPointer[3];
+
+                            // Mix the internal state (8 rounds)
+                            for (int i = 0; i < 4; i++)
+                            {
+                                // Round 1
+                                v0 += v1;
+                                v2 += v3;
+                                v1 = v1 << 5 | v1 >> 27;
+                                v3 = v3 << 8 | v3 >> 24;
+                                v1 ^= v0;
+                                v3 ^= v2;
+                                v0 = v0 << 16 | v0 >> 16;
+                                v2 += v1;
+                                v0 += v3;
+                                v1 = v1 << 7 | v1 >> 25;
+                                v3 = v3 << 13 | v3 >> 19;
+                                v1 ^= v2;
+                                v3 ^= v0;
+                                v2 = v2 << 16 | v2 >> 16;
+
+                                // Round 2
+                                v0 += v1;
+                                v2 += v3;
+                                v1 = v1 << 5 | v1 >> 27;
+                                v3 = v3 << 8 | v3 >> 24;
+                                v1 ^= v0;
+                                v3 ^= v2;
+                                v0 = v0 << 16 | v0 >> 16;
+                                v2 += v1;
+                                v0 += v3;
+                                v1 = v1 << 7 | v1 >> 25;
+                                v3 = v3 << 13 | v3 >> 19;
+                                v1 ^= v2;
+                                v3 ^= v0;
+                                v2 = v2 << 16 | v2 >> 16;
+                            }
                         }
                     }
 
-                    state0 ^= lastBlockKey[0];
-                    state1 ^= lastBlockKey[1];
-                    state2 ^= lastBlockKey[2];
-                    state3 ^= lastBlockKey[3];
+                    // Mix in the last block (0 to 16 bytes)
+                    if (dataCount > 0 && (dataCount & 0xF) == 0)
+                    {
+                        finalizationKey = this.keyAligned;
 
-                    Permute(ref state0, ref state1, ref state2, ref state3);
+                        // Mix the last 16 bytes into the state
+                        v0 ^= dataPointer[0];
+                        v1 ^= dataPointer[1];
+                        v2 ^= dataPointer[2];
+                        v3 ^= dataPointer[3];
+                    }
+                    else
+                    {
+                        finalizationKey = this.keyUnaligned;
 
-                    state0 ^= lastBlockKey[0];
-                    state1 ^= lastBlockKey[1];
-                    state2 ^= lastBlockKey[2];
-                    state3 ^= lastBlockKey[3];
+                        // Mix remaining bytes (less than 16) into the state
+                        switch (dataCount & 0xF)
+                        {
+                            case 15:
+                                v0 ^= *dataPointer;
+                                v1 ^= *(dataPointer + 1);
+                                v2 ^= *(dataPointer + 2);
+                                v3 ^= *(ushort*)(dataPointer + 3) | (uint)*((byte*)dataPointer + 14) << 16 | 1U << 24;
+                                break;
+                            case 14:
+                                v0 ^= *dataPointer;
+                                v1 ^= *(dataPointer + 1);
+                                v2 ^= *(dataPointer + 2);
+                                v3 ^= *(ushort*)(dataPointer + 3) | 1U << 16;
+                                break;
+                            case 13:
+                                v0 ^= *dataPointer;
+                                v1 ^= *(dataPointer + 1);
+                                v2 ^= *(dataPointer + 2);
+                                v3 ^= *(byte*)(dataPointer + 3) | 1U << 8;
+                                break;
+                            case 12:
+                                v0 ^= *dataPointer;
+                                v1 ^= *(dataPointer + 1);
+                                v2 ^= *(dataPointer + 2);
+                                v3 ^= 1U;
+                                break;
+                            case 11:
+                                v0 ^= *dataPointer;
+                                v1 ^= *(dataPointer + 1);
+                                v2 ^= *(ushort*)(dataPointer + 2) | (uint)*((byte*)dataPointer + 10) << 16 | 1U << 24;
+                                break;
+                            case 10:
+                                v0 ^= *dataPointer;
+                                v1 ^= *(dataPointer + 1);
+                                v2 ^= *(ushort*)(dataPointer + 2) | 1U << 16;
+                                break;
+                            case 9:
+                                v0 ^= *dataPointer;
+                                v1 ^= *(dataPointer + 1);
+                                v2 ^= *(byte*)(dataPointer + 2) | 1U << 8;
+                                break;
+                            case 8:
+                                v0 ^= *dataPointer;
+                                v1 ^= *(dataPointer + 1);
+                                v2 ^= 1U;
+                                break;
+                            case 7:
+                                v0 ^= *dataPointer;
+                                v1 ^= *(ushort*)(dataPointer + 1) | (uint)*((byte*)dataPointer + 6) << 16 | 1U << 24;
+                                break;
+                            case 6:
+                                v0 ^= *dataPointer;
+                                v1 ^= *(ushort*)(dataPointer + 1) | 1U << 16;
+                                break;
+                            case 5:
+                                v0 ^= *dataPointer;
+                                v1 ^= *(byte*)(dataPointer + 1) | 1U << 8;
+                                break;
+                            case 4:
+                                v0 ^= *dataPointer;
+                                v1 ^= 1U;
+                                break;
+                            case 3:
+                                v0 ^= *(ushort*)dataPointer | (uint)*((byte*)dataPointer + 2) << 16 | 1U << 24;
+                                break;
+                            case 2:
+                                v0 ^= *(ushort*)dataPointer | 1U << 16;
+                                break;
+                            case 1:
+                                v0 ^= *(byte*)dataPointer | 1U << 8;
+                                break;
+                            case 0:
+                                v0 ^= 1U;
+                                break;
+                        }
+                    }
                 }
-
-                // Return tag - the final internal state
-                var tag = new byte[sizeof(uint) * 4];
-                fixed (byte* pTag = tag)
-                {
-                    var pTag32 = (uint*)pTag;
-                    pTag32[0] = state0;
-                    pTag32[1] = state1;
-                    pTag32[2] = state2;
-                    pTag32[3] = state3;
-                }
-                return tag;
             }
-        }
 
-        #endregion
-
-        #region Chaskey round function
-
-        /// <summary>Left bitwise rotation.</summary>
-        /// <param name="x">Variable to rotate.</param>
-        /// <param name="b">Number of bits to rotate.</param>
-        /// <returns>Rotated variable.</returns>
-        /// <remarks>Does not throw exceptions.</remarks>
-        private static uint ROTL32(uint x, int b)
-        {
-            return (x << b) | (x >> (32 - b));
-        }
-
-        /// <summary>Performs single round of Chaskey on a 128-bit internal state.</summary>
-        /// <param name="v0">32 bits of internal state.</param>
-        /// <param name="v1">32 bits of internal state.</param>
-        /// <param name="v2">32 bits of internal state.</param>
-        /// <param name="v3">32 bits of internal state.</param>
-        /// <remarks>Does not throw exceptions.</remarks>
-        private static void ChaskeyRound(ref uint v0, ref uint v1, ref uint v2, ref uint v3)
-        {
-            v0 += v1; v1 = ROTL32(v1, 5); v1 ^= v0; v0 = ROTL32(v0, 16);
-            v2 += v3; v3 = ROTL32(v3, 8); v3 ^= v2;
-            v0 += v3; v3 = ROTL32(v3, 13); v3 ^= v0;
-            v2 += v1; v1 = ROTL32(v1, 7); v1 ^= v2; v2 = ROTL32(v2, 16);
-        }
-
-        /// <summary>Performs 8 rounds of Chaskey on a 128-bit internal state.</summary>
-        /// <param name="v0">32 bits of internal state.</param>
-        /// <param name="v1">32 bits of internal state.</param>
-        /// <param name="v2">32 bits of internal state.</param>
-        /// <param name="v3">32 bits of internal state.</param>
-        /// <remarks>Does not throw exceptions.</remarks>
-        private static void Permute(ref uint v0, ref uint v1, ref uint v2, ref uint v3)
-        {
-            for (int i = 0; i < 8; i++)
+            // Finalization
             {
-#if CHASKEY_INLINE
-                v0 += v1;
-                v1 = (v1 << 5) | (v1 >> (32 - 5));
-                v1 ^= v0;
-                v0 = (v0 << 16) | (v0 >> (32 - 16));
+                v0 ^= finalizationKey[0];
+                v1 ^= finalizationKey[1];
+                v2 ^= finalizationKey[2];
+                v3 ^= finalizationKey[3];
 
-                v2 += v3;
-                v3 = (v3 << 8) | (v3 >> (32 - 8));
-                v3 ^= v2;
+                // Mix the internal state (8 rounds)
+                for (int i = 0; i < 4; i++)
+                {
+                    // Round 1
+                    v0 += v1;
+                    v2 += v3;
+                    v1 = v1 << 5 | v1 >> 27;
+                    v3 = v3 << 8 | v3 >> 24;
+                    v1 ^= v0;
+                    v3 ^= v2;
+                    v0 = v0 << 16 | v0 >> 16;
+                    v2 += v1;
+                    v0 += v3;
+                    v1 = v1 << 7 | v1 >> 25;
+                    v3 = v3 << 13 | v3 >> 19;
+                    v1 ^= v2;
+                    v3 ^= v0;
+                    v2 = v2 << 16 | v2 >> 16;
 
-                v0 += v3;
-                v3 = (v3 << 13) | (v3 >> (32 - 13));
-                v3 ^= v0;
+                    // Round 2
+                    v0 += v1;
+                    v2 += v3;
+                    v1 = v1 << 5 | v1 >> 27;
+                    v3 = v3 << 8 | v3 >> 24;
+                    v1 ^= v0;
+                    v3 ^= v2;
+                    v0 = v0 << 16 | v0 >> 16;
+                    v2 += v1;
+                    v0 += v3;
+                    v1 = v1 << 7 | v1 >> 25;
+                    v3 = v3 << 13 | v3 >> 19;
+                    v1 ^= v2;
+                    v3 ^= v0;
+                    v2 = v2 << 16 | v2 >> 16;
+                }
 
-                v2 += v1;
-                v1 = (v1 << 7) | (v1 >> (32 - 7));
-                v1 ^= v2;
-                v2 = (v2 << 16) | (v2 >> (32 - 16));
-#else
-                ChaskeyRound(ref v0, ref v1, ref v2, ref v3);
-#endif
+                v0 ^= finalizationKey[0];
+                v1 ^= finalizationKey[1];
+                v2 ^= finalizationKey[2];
+                v3 ^= finalizationKey[3];
+            }
+
+            // Return tag - the final internal state
+            unsafe
+            {
+                fixed (byte* tagPointer = &tag[tagOffset])
+                {
+                    var tagPointerUInt = (uint*)tagPointer;
+                    tagPointerUInt[0] = v0;
+                    tagPointerUInt[1] = v1;
+                    tagPointerUInt[2] = v2;
+                    tagPointerUInt[3] = v3;
+                }
             }
         }
 

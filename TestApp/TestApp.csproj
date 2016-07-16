@@ -30,6 +30,8 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -51,6 +53,10 @@
     <ProjectReference Include="..\Chaskey.Tests\Chaskey.Tests.csproj">
       <Project>{df42b309-fd11-46a4-90c0-2fa12b2eb899}</Project>
       <Name>Chaskey.Tests</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Chaskey\Chaskey.csproj">
+      <Project>{6f868707-7a99-4a2b-afde-a17daa21a1ec}</Project>
+      <Name>Chaskey</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
