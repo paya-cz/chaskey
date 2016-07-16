@@ -18,13 +18,13 @@ namespace Chaskey
         #region Fields
 
         /// <summary>Raw key.</summary>
-        private uint[] key = new uint[4];
+        private readonly uint[] key = new uint[4];
 
         /// <summary>Key derived from <see cref="key"/>, used when the message is properly aligned.</summary>
-        private uint[] keyAligned = new uint[4];
+        private readonly uint[] keyAligned = new uint[4];
 
         /// <summary>Key derived from <see cref="key"/>, used when the message is not aligned.</summary>
-        private uint[] keyUnaligned = new uint[4];
+        private readonly uint[] keyUnaligned = new uint[4];
 
         #endregion
 
