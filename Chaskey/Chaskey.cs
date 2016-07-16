@@ -49,7 +49,7 @@ namespace Chaskey
         /// <param name="offset">Offset in <paramref name="key"/> where the actual key starts.</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="key"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="offset"/> is negative.</exception>
-        /// <exception cref="ArgumentException">Thrown when the key is not 128-bit.</exception>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="offset"/> does not specify a valid 16-byte range in <paramref name="key"/>.</exception>
         public Chaskey(byte[] key, int offset)
         {
             if (key == null)
