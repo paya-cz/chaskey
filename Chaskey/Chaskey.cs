@@ -87,7 +87,7 @@ namespace Chaskey
 
         #region PRF computation (Compute)
 
-        /// <summary>Computes Chaskey 128-bit tag for the specified message.</summary>
+        /// <summary>Computes 128-bit Chaskey tag for the specified message.</summary>
         /// <param name="data"><para>The byte array for which to compute Chaskey tag.</para><para>Must not be null.</para></param>
         /// <returns>Returns 128-bit (16 bytes) Chaskey tag.</returns>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="data"/> is null.</exception>
@@ -100,8 +100,8 @@ namespace Chaskey
             this.Compute(data, 0, data.Length, tag, 0);
             return tag;
         }
-        
-        /// <summary>Computes Chaskey 128-bit tag for the specified message.</summary>
+
+        /// <summary>Computes 128-bit Chaskey tag for the specified message.</summary>
         /// <param name="data">The byte array for which to compute Chaskey tag.</param>
         /// <returns>Returns 128-bit (16 bytes) Chaskey tag.</returns>
         /// <remarks>Does not throw exceptions.</remarks>
@@ -112,7 +112,7 @@ namespace Chaskey
             return tag;
         }
 
-        /// <summary>Computes Chaskey 128-bit tag for the specified message.</summary>
+        /// <summary>Computes 128-bit Chaskey tag for the specified message.</summary>
         /// <param name="data"><para>The byte array for which to compute Chaskey tag.</para><para>Must not be null.</para></param>
         /// <param name="offset">The zero-based index of the first element in the range.</param>
         /// <param name="count">The number of elements in the range.</param>
@@ -136,7 +136,7 @@ namespace Chaskey
             return tag;
         }
 
-        /// <summary><para>Computes Chaskey 128-bit tag for the specified message.</para><para>Use this method for fastest allocation-free implementation.</para></summary>
+        /// <summary><para>Computes 128-bit Chaskey tag for the specified message.</para><para>Use this method for fastest allocation-free implementation.</para></summary>
         /// <param name="data"><para>The byte array for which to compute Chaskey tag.</para><para>Must not be null.</para></param>
         /// <param name="dataOffset">The zero-based index of the first element in the data range.</param>
         /// <param name="dataCount">The number of elements in the range.</param>

@@ -16,7 +16,7 @@ namespace Chaskey.Tests
             var key = new uint[] { 0x833D3433, 0x009F389F, 0x2398E64F, 0x417ACF39 }.SelectMany(x => BitConverter.GetBytes(x)).ToArray();
 
             // Chaskey initialized with the key
-            var prf = new Chaskey(key, 0, key.Length);
+            var prf = new Chaskey(key);
 
             // Perform the test battery
             var message = new byte[64];
