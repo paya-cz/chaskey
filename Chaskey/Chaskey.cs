@@ -31,14 +31,14 @@ namespace Chaskey
         #region Constructors
 
         /// <summary>Initializes a new instance of Chaskey PRF using specified key and performs key scheduling.</summary>
-        /// <param name="key"><para>Byte array holding the key.</para><para>Must not be null.</para></param>
+        /// <param name="key"><para>Byte array holding the key.</para><para>Must be exactly 16 bytes long and must not be null.</para></param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="key"/> is null.</exception>
-        /// <exception cref="ArgumentException">Thrown when the key is not 128-bit.</exception>
+        /// <exception cref="ArgumentException">Thrown when the key is not 128-bits long (16 bytes).</exception>
         public Chaskey(byte[] key)
         {
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
-            if (key.Length != 128 / 8)
+            if (key.Length != 16)
                 throw new ArgumentException("The key must be 128 bits long (16 bytes).", nameof(key));
 
             this.Initialize(key, 0, key.Length);
@@ -47,22 +47,19 @@ namespace Chaskey
         /// <summary>Initializes a new instance of Chaskey PRF using specified key and performs key scheduling.</summary>
         /// <param name="key"><para>Byte array holding the key.</para><para>Must not be null.</para></param>
         /// <param name="offset">Offset in <paramref name="key"/> where the actual key starts.</param>
-        /// <param name="count">Length of the key. Must be 128-bits (16 bytes).</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="key"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="offset"/> is negative.</exception>
         /// <exception cref="ArgumentException">Thrown when the key is not 128-bit.</exception>
-        public Chaskey(byte[] key, int offset, int count)
+        public Chaskey(byte[] key, int offset)
         {
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), "Array offset cannot be negative.");
-            if (count != 128 / 8)
-                throw new ArgumentException("The key must be 128 bits long (16 bytes).", nameof(count));
-            if (count > key.Length - offset)
-                throw new ArgumentException("The specified '" + nameof(offset) + "' and '" + nameof(count) + "' parameters do not specify a valid range in '" + nameof(key) + "'.");
+            if (key.Length - offset < 16)
+                throw new ArgumentException("The specified '" + nameof(offset) + "' parameter does not specify a valid 16-byte range in '" + nameof(key) + "'.");
 
-            this.Initialize(key, offset, count);
+            this.Initialize(key, offset, 16);
         }
 
         #endregion
