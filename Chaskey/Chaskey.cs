@@ -380,9 +380,9 @@ namespace Chaskey
             // Return tag - the final internal state
             unsafe
             {
-                fixed (byte* tagPointer = &tag[tagOffset])
+                fixed (byte* tagPointer = tag)
                 {
-                    var tagPointerUInt = (uint*)tagPointer;
+                    var tagPointerUInt = (uint*)(tagPointer + tagOffset);
                     tagPointerUInt[0] = v0;
                     tagPointerUInt[1] = v1;
                     tagPointerUInt[2] = v2;
