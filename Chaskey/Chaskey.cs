@@ -176,10 +176,10 @@ namespace Chaskey
 
             unsafe
             {
-                fixed (byte* dataStart = data)
+                fixed (byte* dataStart = &data[dataOffset])
                 {
                     // Initialize pointer to current data block to the start of the range
-                    var dataPointer = (uint*)(dataStart + dataOffset);
+                    var dataPointer = (uint*)dataStart;
 
                     // Process 128 bits of the message at a time
                     if (dataCount > 16)
@@ -380,9 +380,9 @@ namespace Chaskey
             // Return tag - the final internal state
             unsafe
             {
-                fixed (byte* tagPointer = tag)
+                fixed (byte* tagPointer = &tag[tagOffset])
                 {
-                    var tagPointerUInt = (uint*)(tagPointer + tagOffset);
+                    var tagPointerUInt = (uint*)tagPointer;
                     tagPointerUInt[0] = v0;
                     tagPointerUInt[1] = v1;
                     tagPointerUInt[2] = v2;
