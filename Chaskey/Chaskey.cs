@@ -165,7 +165,7 @@ namespace Chaskey
             if (tag.Length - tagOffset < 16)
                 throw new ArgumentException("The specified '" + nameof(tagOffset) + "' parameter does not specify a valid 16-byte range in '" + nameof(tag) + "'.");
 
-            // 128-bit internal state
+            // 128-bit internal state (do not use unsafe/fixed for the key array, it is slower)
             var v0 = this.key[0];
             var v1 = this.key[1];
             var v2 = this.key[2];
@@ -186,18 +186,21 @@ namespace Chaskey
                     {
                         // Pointer to the 2nd to last message block (aligned to 16 bytes)
                         var dataEndAligned = dataPointer + (dataCount - 1 >> 4 << 2);
-
-                        for (; dataPointer != dataEndAligned; dataPointer += 4)
+                        
+                        while (dataPointer < dataEndAligned)
                         {
                             // Mix message bits into the state
                             v0 ^= dataPointer[0];
                             v1 ^= dataPointer[1];
                             v2 ^= dataPointer[2];
                             v3 ^= dataPointer[3];
+                            dataPointer += 4;
 
                             // Mix the internal state (8 rounds)
-                            for (int i = 0; i < 4; i++)
+                            for (int i = 0; i < 4;)
                             {
+                                i++;
+
                                 // Round 1
                                 v0 += v1;
                                 v2 += v3;
@@ -336,8 +339,10 @@ namespace Chaskey
                 v3 ^= finalizationKey[3];
 
                 // Mix the internal state (8 rounds)
-                for (int i = 0; i < 4; i++)
+                for (int i = 0; i < 4;)
                 {
+                    i++;
+
                     // Round 1
                     v0 += v1;
                     v2 += v3;
