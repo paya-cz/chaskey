@@ -10,9 +10,9 @@ The C# code has been heavily optimized both for short and long messages.
 Below are the results of a benchmark I ran on i7 3630QM against heavily optimized C# SipHash implementation.
 
 64-bit mode (processing 10 GiB in 4 KiB chunks):
-- SipHash: 1 200 MiB/s
-- Chaskey: 615 MiB/s
+- SipHash: 1 226 MiB/s
+- Chaskey: 630 MiB/s
 
 32-bit mode (processing 10 GiB in 4 KiB chunks):
-- SipHash: 315 MiB/s
-- Chaskey: 515 MiB/s
+- SipHash: 324 MiB/s
+- Chaskey: 575 MiB/s
