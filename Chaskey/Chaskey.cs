@@ -186,8 +186,8 @@ namespace Chaskey
                     {
                         // Pointer to the 2nd to last message block (aligned to 16 bytes)
                         var dataEndAligned = dataPointer + (dataCount - 1 >> 4 << 2);
-                        
-                        while (dataPointer < dataEndAligned)
+
+                        do
                         {
                             // Mix message bits into the state
                             v0 ^= dataPointer[0];
@@ -233,7 +233,7 @@ namespace Chaskey
                                 v3 ^= v0;
                                 v2 = v2 << 16 | v2 >> 16;
                             }
-                        }
+                        } while (dataPointer < dataEndAligned);
                     }
 
                     // Mix in the last block (0 to 16 bytes)
@@ -255,63 +255,63 @@ namespace Chaskey
                         switch (dataCount & 0xF)
                         {
                             case 15:
-                                v0 ^= *dataPointer;
-                                v1 ^= *(dataPointer + 1);
-                                v2 ^= *(dataPointer + 2);
+                                v0 ^= dataPointer[0];
+                                v1 ^= dataPointer[1];
+                                v2 ^= dataPointer[2];
                                 v3 ^= *(ushort*)(dataPointer + 3) | (uint)*((byte*)dataPointer + 14) << 16 | 1U << 24;
                                 break;
                             case 14:
-                                v0 ^= *dataPointer;
-                                v1 ^= *(dataPointer + 1);
-                                v2 ^= *(dataPointer + 2);
+                                v0 ^= dataPointer[0];
+                                v1 ^= dataPointer[1];
+                                v2 ^= dataPointer[2];
                                 v3 ^= *(ushort*)(dataPointer + 3) | 1U << 16;
                                 break;
                             case 13:
-                                v0 ^= *dataPointer;
-                                v1 ^= *(dataPointer + 1);
-                                v2 ^= *(dataPointer + 2);
+                                v0 ^= dataPointer[0];
+                                v1 ^= dataPointer[1];
+                                v2 ^= dataPointer[2];
                                 v3 ^= *(byte*)(dataPointer + 3) | 1U << 8;
                                 break;
                             case 12:
-                                v0 ^= *dataPointer;
-                                v1 ^= *(dataPointer + 1);
-                                v2 ^= *(dataPointer + 2);
+                                v0 ^= dataPointer[0];
+                                v1 ^= dataPointer[1];
+                                v2 ^= dataPointer[2];
                                 v3 ^= 1U;
                                 break;
                             case 11:
-                                v0 ^= *dataPointer;
-                                v1 ^= *(dataPointer + 1);
+                                v0 ^= dataPointer[0];
+                                v1 ^= dataPointer[1];
                                 v2 ^= *(ushort*)(dataPointer + 2) | (uint)*((byte*)dataPointer + 10) << 16 | 1U << 24;
                                 break;
                             case 10:
-                                v0 ^= *dataPointer;
-                                v1 ^= *(dataPointer + 1);
+                                v0 ^= dataPointer[0];
+                                v1 ^= dataPointer[1];
                                 v2 ^= *(ushort*)(dataPointer + 2) | 1U << 16;
                                 break;
                             case 9:
-                                v0 ^= *dataPointer;
-                                v1 ^= *(dataPointer + 1);
+                                v0 ^= dataPointer[0];
+                                v1 ^= dataPointer[1];
                                 v2 ^= *(byte*)(dataPointer + 2) | 1U << 8;
                                 break;
                             case 8:
-                                v0 ^= *dataPointer;
-                                v1 ^= *(dataPointer + 1);
+                                v0 ^= dataPointer[0];
+                                v1 ^= dataPointer[1];
                                 v2 ^= 1U;
                                 break;
                             case 7:
-                                v0 ^= *dataPointer;
+                                v0 ^= dataPointer[0];
                                 v1 ^= *(ushort*)(dataPointer + 1) | (uint)*((byte*)dataPointer + 6) << 16 | 1U << 24;
                                 break;
                             case 6:
-                                v0 ^= *dataPointer;
+                                v0 ^= dataPointer[0];
                                 v1 ^= *(ushort*)(dataPointer + 1) | 1U << 16;
                                 break;
                             case 5:
-                                v0 ^= *dataPointer;
+                                v0 ^= dataPointer[0];
                                 v1 ^= *(byte*)(dataPointer + 1) | 1U << 8;
                                 break;
                             case 4:
-                                v0 ^= *dataPointer;
+                                v0 ^= dataPointer[0];
                                 v1 ^= 1U;
                                 break;
                             case 3:
