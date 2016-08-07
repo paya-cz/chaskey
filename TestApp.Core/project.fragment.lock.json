@@ -1,0 +1,39 @@
+{
+  "version": 2,
+  "exports": {
+    "Chaskey.Benchmarks/1.0.0": {
+      "type": "project",
+      "framework": ".NETStandard,Version=v1.0",
+      "compile": {
+        "bin/Release/Chaskey.Benchmarks.dll": {}
+      },
+      "runtime": {
+        "bin/Release/Chaskey.Benchmarks.dll": {}
+      },
+      "contentFiles": {
+        "bin/Release/Chaskey.Benchmarks.pdb": {
+          "buildAction": "None",
+          "codeLanguage": "any",
+          "copyToOutput": true
+        }
+      }
+    },
+    "Chaskey/1.0.0": {
+      "type": "project",
+      "framework": ".NETStandard,Version=v1.0",
+      "compile": {
+        "bin/Release/Chaskey.dll": {}
+      },
+      "runtime": {
+        "bin/Release/Chaskey.dll": {}
+      },
+      "contentFiles": {
+        "bin/Release/Chaskey.pdb": {
+          "buildAction": "None",
+          "codeLanguage": "any",
+          "copyToOutput": true
+        }
+      }
+    }
+  }
+}
